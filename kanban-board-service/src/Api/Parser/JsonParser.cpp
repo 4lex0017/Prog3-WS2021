@@ -32,9 +32,28 @@ string JsonParser::convertToApiString(std::vector<Item> &items) {
 }
 
 std::optional<Column> JsonParser::convertColumnToModel(int columnId, std::string &request) {
-    throw NotImplementedException();
+    std::string itemstring;
+    std::string name;
+    int pos;
+
+    std::size_t temp = request.find_first_of("\"name\"; ");
+    name = request.substr(temp);
+    std::size_t temp = request.find_first_of(",");
+    name.erase(temp);
+
+    std::size_t temp = request.find_first_of("\"position\"; ");
+    std::string posstr = request.substr(temp);
+    std::size_t temp = request.find_first_of(",");
+    posstr.erase(temp);
+    pos = std::stoi(posstr);
+
+    Column col = Column(columnId, name, pos);
+    return col;
 }
 
 std::optional<Item> JsonParser::convertItemToModel(int itemId, std::string &request) {
-    throw NotImplementedException();
+    std::string itemtitle;
+    std::string itemtime;
+    int itempos;
+    int itemid;
 }
