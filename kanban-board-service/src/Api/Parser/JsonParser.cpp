@@ -38,13 +38,13 @@ std::optional<Column> JsonParser::convertColumnToModel(int columnId, std::string
 
     std::size_t temp = request.find_first_of("\"name\"; ");
     name = request.substr(temp);
-    std::size_t temp = request.find_first_of(",");
-    name.erase(temp);
+    std::size_t temp2 = request.find_first_of(",");
+    name.erase(temp2);
 
-    std::size_t temp = request.find_first_of("\"position\"; ");
-    std::string posstr = request.substr(temp);
-    std::size_t temp = request.find_first_of(",");
-    posstr.erase(temp);
+    std::size_t temp3 = request.find_first_of("\"position\"; ");
+    std::string posstr = request.substr(temp3);
+    std::size_t temp4 = request.find_first_of(",");
+    posstr.erase(temp4);
     pos = std::stoi(posstr);
 
     Column col = Column(columnId, name, pos);
@@ -56,4 +56,6 @@ std::optional<Item> JsonParser::convertItemToModel(int itemId, std::string &requ
     std::string itemtime;
     int itempos;
     int itemid;
+    Item item = Item(itemid, itemtitle, itempos, itemtime);
+    return item;
 }
