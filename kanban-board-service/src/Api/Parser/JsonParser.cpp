@@ -15,8 +15,21 @@ string JsonParser::convertToApiString(Board &board) {
     throw NotImplementedException();
 }
 
+rapidjson::Value JsonParser::getJsonValueFromModel(Item const &item, rapidjson::Document::AllocatorType &allocator) {
+    Value jsonItem(kObjectType);
+
+    jsonItem.AddMember("id", item.getId(), allocator);
+    jsonItem.AddMember("title", Value(item.getTitle().c_str(), allocator), allocator);
+    jsonItem.AddMember("position", item.getPos(), allocator);
+    jsonItem.AddMember("timestamp", Value(item.getTimestamp().c_str(), allocator), allocator);
+
+    return jsonItem;
+}
 string JsonParser::convertToApiString(Column &column) {
-    throw NotImplementedException();
+    Document document(kObjectType);
+
+    Value jsonColumn = getJsonValueFromModel(column, document.GetAllocator());
+    return jsonValueToString(jsonColumn);
 }
 
 string JsonParser::convertToApiString(std::vector<Column> &columns) {
@@ -30,17 +43,6 @@ string JsonParser::convertToApiString(Item &item) {
     Value jsonItem = getJsonValueFromModel(item, document.GetAllocator());
     result = jsonValueToString(jsonItem);
     return result;
-}
-
-rapidjson::Value JsonParser::getJsonValueFromModel(Item const &item, rapidjson::Document::AllocatorType &allocator) {
-    Value jsonItem(kObjectType);
-
-    jsonItem.AddMember("id", item.getId(), allocator);
-    jsonItem.AddMember("title", Value(item.getTitle().c_str(), allocator), allocator);
-    jsonItem.AddMember("position", item.getPos(), allocator);
-    jsonItem.AddMember("timestamp", Value(item.getTimestamp().c_str(), allocator), allocator);
-
-    return jsonItem;
 }
 
 rapidjson::Value JsonParser::getJsonValueFromModel(Column const &column, rapidjson::Document::AllocatorType &allocator) {
@@ -91,6 +93,14 @@ std::optional<Item> JsonParser::convertItemToModel(int itemId, std::string &requ
         resultItem = Item(itemId, title, position, "");
     }
     return resultItem;
+}
+
+string JsonParser::jsonValueToString(rapidjson::Value const &json) {
+    StringBuffer buffer;
+    Writer<StringBuffer> writer(buffer);
+    json.Accept(writer);
+
+    return buffer.GetString();
 }
 
 bool JsonParser::isValidColumn(rapidjson::Document const &document) {

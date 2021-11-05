@@ -103,8 +103,7 @@ std::optional<Prog3::Core::Model::Column> BoardRepository::putColumn(int id, std
 
 void BoardRepository::deleteColumn(int id) {
     string sqlDeleteItem =
-        "DELETE FROM column"
-        "WHERE 'position' = " +
+        "DELETE FROM column WHERE 'position' = " +
         to_string(id);
 
     int result = 0;
@@ -115,7 +114,7 @@ void BoardRepository::deleteColumn(int id) {
         fprintf(stderr, "SQL error: %s\n", errorMessage);
         sqlite3_free(errorMessage);
     } else {
-        fprintf(stdout, "Operation done successfully\n");
+        fprintf(stdout, "Delete done successfully\n");
     }
 }
 
@@ -168,7 +167,7 @@ void BoardRepository::deleteItem(int columnId, int itemId) {
         fprintf(stderr, "SQL error: %s\n", errorMessage);
         sqlite3_free(errorMessage);
     } else {
-        fprintf(stdout, "Operation done successfully\n");
+        fprintf(stdout, "Delete done successfully\n");
     }
 }
 
