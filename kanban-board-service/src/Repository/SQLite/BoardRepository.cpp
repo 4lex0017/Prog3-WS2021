@@ -103,19 +103,14 @@ std::optional<Prog3::Core::Model::Column> BoardRepository::putColumn(int id, std
 
 void BoardRepository::deleteColumn(int id) {
     string sqlDeleteItem =
-        "DELETE FROM column WHERE 'id' = " +
+        "DELETE FROM column WHERE id = " +
         to_string(id);
 
     int result = 0;
     char *errorMessage = nullptr;
     result = sqlite3_exec(database, sqlDeleteItem.c_str(), NULL, 0, &errorMessage);
 
-    if (result != SQLITE_OK) {
-        fprintf(stderr, "SQL error: %s\n", errorMessage);
-        sqlite3_free(errorMessage);
-    } else {
-        fprintf(stdout, "Delete done successfully\n");
-    }
+    handleSQLError(result, errorMessage);
 }
 
 std::vector<Item> BoardRepository::getItems(int columnId) {
@@ -155,19 +150,14 @@ std::optional<Prog3::Core::Model::Item> BoardRepository::putItem(int columnId, i
 
 void BoardRepository::deleteItem(int columnId, int itemId) {
     string sqlDeleteItem =
-        "DELETE FROM item WHERE 'column_id' = " +
-        to_string(columnId) + "AND 'id'" + to_string(itemId);
+        "DELETE FROM item WHERE column_id = " +
+        to_string(columnId) + "AND id =" + to_string(itemId);
 
     int result = 0;
     char *errorMessage = nullptr;
     result = sqlite3_exec(database, sqlDeleteItem.c_str(), NULL, 0, &errorMessage);
 
-    if (result != SQLITE_OK) {
-        fprintf(stderr, "SQL error: %s\n", errorMessage);
-        sqlite3_free(errorMessage);
-    } else {
-        fprintf(stdout, "Delete done successfully\n");
-    }
+    handleSQLError(result, errorMessage);
 }
 
 void BoardRepository::handleSQLError(int statementResult, char *errorMessage) {
