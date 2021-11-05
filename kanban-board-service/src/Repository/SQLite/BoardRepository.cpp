@@ -155,7 +155,7 @@ std::optional<Prog3::Core::Model::Item> BoardRepository::putItem(int columnId, i
 
 void BoardRepository::deleteItem(int columnId, int itemId) {
     string sqlDeleteItem =
-        "DELETE FROM column WHERE 'column_id' = " +
+        "DELETE FROM item WHERE 'column_id' = " +
         to_string(columnId) + "AND 'position'" + to_string(itemId);
 
     int result = 0;
