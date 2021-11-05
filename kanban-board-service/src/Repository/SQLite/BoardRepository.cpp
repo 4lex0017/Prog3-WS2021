@@ -103,7 +103,7 @@ std::optional<Prog3::Core::Model::Column> BoardRepository::putColumn(int id, std
 
 void BoardRepository::deleteColumn(int id) {
     string sqlDeleteItem =
-        "DELETE FROM column WHERE 'position' = " +
+        "DELETE FROM column WHERE 'id' = " +
         to_string(id);
 
     int result = 0;
@@ -156,7 +156,7 @@ std::optional<Prog3::Core::Model::Item> BoardRepository::putItem(int columnId, i
 void BoardRepository::deleteItem(int columnId, int itemId) {
     string sqlDeleteItem =
         "DELETE FROM item WHERE 'column_id' = " +
-        to_string(columnId) + "AND 'position'" + to_string(itemId);
+        to_string(columnId) + "AND 'id'" + to_string(itemId);
 
     int result = 0;
     char *errorMessage = nullptr;
