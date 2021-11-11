@@ -102,10 +102,10 @@ std::optional<Prog3::Core::Model::Column> BoardRepository::putColumn(int id, std
     char *datetime = ctime(&now);
     string sqlDeleteItem = "UPDATE column SET ";
     if (name.size()) {
-        sqlDeleteItem = sqlDeleteItem + "name = " + name + " ";
+        sqlDeleteItem = sqlDeleteItem + "name = '" + name + "' ";
     }
     if (position > -1) {
-        sqlDeleteItem = sqlDeleteItem + "positon = " + to_string(position) + " ";
+        sqlDeleteItem = sqlDeleteItem + "positon = '" + to_string(position) + "' ";
     }
     sqlDeleteItem = sqlDeleteItem + "WHERE id = " + to_string(id) + ";";
 
@@ -164,10 +164,10 @@ std::optional<Prog3::Core::Model::Item> BoardRepository::putItem(int columnId, i
     char *datetime = ctime(&now);
     string sqlDeleteItem = "UPDATE item SET ";
     if (title.size()) {
-        sqlDeleteItem = sqlDeleteItem + "title = " + title + " ";
+        sqlDeleteItem = sqlDeleteItem + "title = '" + title + "' ";
     }
     if (position > -1) {
-        sqlDeleteItem = sqlDeleteItem + "positon = " + to_string(position) + " ";
+        sqlDeleteItem = sqlDeleteItem + "positon = '" + to_string(position) + "' ";
     }
     sqlDeleteItem = sqlDeleteItem + "WHERE column_id = " + to_string(columnId) + " AND id = " + to_string(position) + ";";
 
