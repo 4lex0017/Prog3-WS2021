@@ -110,6 +110,7 @@ std::optional<Prog3::Core::Model::Column> BoardRepository::putColumn(int id, std
     int result = 0;
     char *errorMessage = nullptr;
     result = sqlite3_exec(database, sqlDeleteItem.c_str(), NULL, 0, &errorMessage);
+    printf(errorMessage);
     handleSQLError(result, errorMessage);
     return Column(id, name, position);
 }
@@ -171,6 +172,7 @@ std::optional<Prog3::Core::Model::Item> BoardRepository::putItem(int columnId, i
     int result = 0;
     char *errorMessage = nullptr;
     result = sqlite3_exec(database, sqlDeleteItem.c_str(), NULL, 0, &errorMessage);
+    printf(errorMessage);
     handleSQLError(result, errorMessage);
     return Item(itemId, title, position, datetime);
 }
