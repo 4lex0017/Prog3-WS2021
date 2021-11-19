@@ -89,6 +89,19 @@ std::optional<Column> BoardRepository::getColumn(int id) {
     if (columns.empty()) {
         return {};
     };
+
+    if (columns.size() > 1) // the string is > 1 when the column has items/the callback returned the json string
+        columns.pop_back(); // if that happens, remove the last ','
+    columns += "]";         // we now have a valid json string, with items if available...
+
+    Document document;
+    document.Parse(columns.c_str()); // don't think I need error handling here, since the data from the db should be fine
+
+    auto id = document[0]["id"].GetString();
+    auto title = document[0]["name"].GetString();
+    int position = (int)document[0]["position"].GetString();
+
+    return Column(id, title, position);
 }
 
 std::optional<Column> BoardRepository::postColumn(std::string name, int position) {
@@ -196,9 +209,8 @@ std::optional<Item> BoardRepository::getItem(int columnId, int itemId) {
     result = sqlite3_exec(database, sqlSelectItems.c_str(), queryCallback, &items, &errorMessage);
     handleSQLError(result, errorMessage);
 
-    if (items.size() == 0) {
-        std::optional<Item> a;
-        return a;
+    if (items.empty()) {
+        return {};
     }
 
     if (items.size() > 1) // the string is > 1 when the column has items/the callback returned the json string
@@ -208,7 +220,6 @@ std::optional<Item> BoardRepository::getItem(int columnId, int itemId) {
     Document document;
     document.Parse(items.c_str()); // don't think I need error handling here, since the data from the db should be fine
 
-    std::optional<Item> tempItems;
     auto id = document[0]["id"].GetString();
     auto title = document[0]["title"].GetString();
     auto date = document[0]["date"].GetString();
