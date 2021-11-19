@@ -1,5 +1,7 @@
 #include "BoardRepository.hpp"
 #include "Core/Exception/NotImplementedException.hpp"
+#include "rapidjson/document.h"
+#include "rapidjson/rapidjson.h"
 #include <filesystem>
 #include <string.h>
 
@@ -7,6 +9,7 @@ using namespace Prog3::Repository::SQLite;
 using namespace Prog3::Core::Model;
 using namespace Prog3::Core::Exception;
 using namespace std;
+using namespace rapidjson;
 
 #ifdef RELEASE_SERVICE
 string const BoardRepository::databaseFile = "./data/kanban-board.db";
@@ -98,21 +101,65 @@ std::optional<Column> BoardRepository::postColumn(std::string name, int position
 }
 
 std::optional<Prog3::Core::Model::Column> BoardRepository::putColumn(int id, std::string name, int position) {
-    time_t now = time(0);
-    char *datetime = ctime(&now);
-    string sqlDeleteItem = "UPDATE column SET ";
-    sqlDeleteItem = sqlDeleteItem + "name = '" + name + "', ";
-
-    sqlDeleteItem = sqlDeleteItem + "positon = " + to_string(position) + " ";
-
-    sqlDeleteItem = sqlDeleteItem + "WHERE id = " + to_string(id) + ";";
-
     int result = 0;
     char *errorMessage = nullptr;
-    result = sqlite3_exec(database, sqlDeleteItem.c_str(), NULL, 0, &errorMessage);
-    printf(errorMessage);
+
+    string sqlSelectColumn = "select * from column where id = " + to_string(id);
+    string columns;
+
+    result = sqlite3_exec(database, sqlSelectColumn.c_str(), queryCallback, &columns, &errorMessage);
     handleSQLError(result, errorMessage);
-    return Column(id, name, position);
+
+    // we didn't get a response, the column doesn't exist.
+    if (columns.empty()) {
+        return {};
+    }
+
+    string sqlSelectItems = "select * from item where column_id = " + to_string(id); // get all items of the column
+    string items = "[";
+
+    result = sqlite3_exec(database, sqlSelectItems.c_str(), queryCallback, &items, &errorMessage);
+    handleSQLError(result, errorMessage);
+
+    if (items.size() > 1) // the string is > 1 when the column has items/the callback returned the json string
+        items.pop_back(); // if that happens, remove the last ','
+    items += "]";         // we now have a valid json string, with items if available...
+
+    Document document;
+    document.Parse(items.c_str()); // don't think I need error handling here, since the data from the db should be fine
+
+    std::vector<Item> tempItems;
+    // iterate the json object and save the items in a vector.
+    for (auto i = 0; i < document.Size(); i++) {
+        // they're all saved as strings
+        auto id = document[i]["id"].GetString();
+        auto title = document[i]["title"].GetString();
+        auto date = document[i]["date"].GetString();
+        auto position = document[i]["position"].GetString();
+
+        // so we convert them here
+        tempItems.push_back(Item(stoi(id), title, stoi(position), date));
+    }
+
+    string sqlUpdateColumn = "update column "
+                             "set name = '" +
+                             name + "', position = " + std::to_string(position) +
+                             " where id = " + std::to_string(id);
+
+    // time to update the column
+    result = sqlite3_exec(database, sqlUpdateColumn.c_str(), NULL, 0, &errorMessage);
+    handleSQLError(result, errorMessage);
+
+    // if everything went well we add our items to the column and return that.
+    if (result == SQLITE_OK) {
+        auto c = Column(id, name, position);
+        for (auto &item : tempItems)
+            c.addItem(item);
+
+        return c;
+    }
+
+    return {};
 }
 
 void BoardRepository::deleteColumn(int id) {
@@ -161,16 +208,33 @@ std::optional<Item> BoardRepository::postItem(int columnId, std::string title, i
 std::optional<Prog3::Core::Model::Item> BoardRepository::putItem(int columnId, int itemId, std::string title, int position) {
     time_t now = time(0);
     char *datetime = ctime(&now);
+    char *errorMessage = nullptr;
+    int result = 0;
+
+    string sqlSelectItem = "select * from item "
+                           "where id = " +
+                           std::to_string(itemId) +
+                           " and column_id = " + std::to_string(columnId);
+    std::string callback;
+
+    result = sqlite3_exec(database, sqlSelectItem.c_str(), queryCallback, &callback, &errorMessage);
+    handleSQLError(result, errorMessage);
+
+    // the item doesn't exist
+    if (callback.empty()) {
+        return {};
+    }
+
     string sqlDeleteItem = "UPDATE item SET ";
 
     sqlDeleteItem = sqlDeleteItem + "title = '" + title + "', ";
 
-    sqlDeleteItem = sqlDeleteItem + "positon = " + to_string(position) + " ";
+    sqlDeleteItem = sqlDeleteItem + "positon = " + std::to_string(position) + " ";
 
-    sqlDeleteItem = sqlDeleteItem + "WHERE column_id = " + to_string(columnId) + " AND id = " + to_string(position) + ";";
+    sqlDeleteItem = sqlDeleteItem + "WHERE column_id = " + std::to_string(columnId) + " AND id = " + std::to_string(position) + ";";
 
-    int result = 0;
-    char *errorMessage = nullptr;
+    result = 0;
+
     result = sqlite3_exec(database, sqlDeleteItem.c_str(), NULL, 0, &errorMessage);
     printf(errorMessage);
     handleSQLError(result, errorMessage);
@@ -231,5 +295,21 @@ void BoardRepository::createDummyData() {
   I want to show you how the signature of this "callback function" may look like in order to work with sqlite3_exec()
 */
 int BoardRepository::queryCallback(void *data, int numberOfColumns, char **fieldValues, char **columnNames) {
+    if (data) {
+        auto &return_value = *static_cast<std::string *>(data);
+
+        return_value += "{";
+
+        for (int i = 0; i < numberOfColumns; ++i) {
+            return_value += "\"" + std::string(columnNames[i]) + "\": ";
+            return_value += "\"" + std::string(fieldValues[i]) + "\"";
+
+            if (i != numberOfColumns - 1)
+                return_value += ",";
+        }
+
+        return_value += "},";
+    }
+
     return 0;
 }
