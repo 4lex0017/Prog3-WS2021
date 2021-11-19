@@ -76,7 +76,19 @@ std::vector<Column> BoardRepository::getColumns() {
 }
 
 std::optional<Column> BoardRepository::getColumn(int id) {
-    throw NotImplementedException();
+    int result = 0;
+    char *errorMessage = nullptr;
+
+    string sqlSelectColumn = "select * from column where id = " + to_string(id);
+    string columns;
+
+    result = sqlite3_exec(database, sqlSelectColumn.c_str(), queryCallback, &columns, &errorMessage);
+    handleSQLError(result, errorMessage);
+
+    // we didn't get a response, the column doesn't exist.
+    if (columns.empty()) {
+        return {};
+    };
 }
 
 std::optional<Column> BoardRepository::postColumn(std::string name, int position) {
@@ -104,42 +116,9 @@ std::optional<Prog3::Core::Model::Column> BoardRepository::putColumn(int id, std
     int result = 0;
     char *errorMessage = nullptr;
 
-    string sqlSelectColumn = "select * from column where id = " + to_string(id);
-    string columns;
+    getColumn(id);
 
-    result = sqlite3_exec(database, sqlSelectColumn.c_str(), queryCallback, &columns, &errorMessage);
-    handleSQLError(result, errorMessage);
-
-    // we didn't get a response, the column doesn't exist.
-    if (columns.empty()) {
-        return {};
-    }
-
-    string sqlSelectItems = "select * from item where column_id = " + to_string(id); // get all items of the column
-    string items = "[";
-
-    result = sqlite3_exec(database, sqlSelectItems.c_str(), queryCallback, &items, &errorMessage);
-    handleSQLError(result, errorMessage);
-
-    if (items.size() > 1) // the string is > 1 when the column has items/the callback returned the json string
-        items.pop_back(); // if that happens, remove the last ','
-    items += "]";         // we now have a valid json string, with items if available...
-
-    Document document;
-    document.Parse(items.c_str()); // don't think I need error handling here, since the data from the db should be fine
-
-    std::vector<Item> tempItems;
-    // iterate the json object and save the items in a vector.
-    for (auto i = 0; i < document.Size(); i++) {
-        // they're all saved as strings
-        auto id = document[i]["id"].GetString();
-        auto title = document[i]["title"].GetString();
-        auto date = document[i]["date"].GetString();
-        auto position = document[i]["position"].GetString();
-
-        // so we convert them here
-        tempItems.push_back(Item(stoi(id), title, stoi(position), date));
-    }
+    std::vector<Item> tempItems = getItems(id);
 
     string sqlUpdateColumn = "update column "
                              "set name = '" +
@@ -175,11 +154,67 @@ void BoardRepository::deleteColumn(int id) {
 }
 
 std::vector<Item> BoardRepository::getItems(int columnId) {
-    throw NotImplementedException();
+    int result = 0;
+    char *errorMessage = nullptr;
+
+    string sqlSelectItems = "select * from item where column_id = " + to_string(columnId); // get all items of the column
+    string items = "[";
+
+    result = sqlite3_exec(database, sqlSelectItems.c_str(), queryCallback, &items, &errorMessage);
+    handleSQLError(result, errorMessage);
+
+    if (items.size() > 1) // the string is > 1 when the column has items/the callback returned the json string
+        items.pop_back(); // if that happens, remove the last ','
+    items += "]";         // we now have a valid json string, with items if available...
+
+    Document document;
+    document.Parse(items.c_str()); // don't think I need error handling here, since the data from the db should be fine
+
+    std::vector<Item> tempItems;
+    // iterate the json object and save the items in a vector.
+    for (auto i = 0; i < document.Size(); i++) {
+        // they're all saved as strings
+        auto id = document[i]["id"].GetString();
+        auto title = document[i]["title"].GetString();
+        auto date = document[i]["date"].GetString();
+        auto position = document[i]["position"].GetString();
+
+        // so we convert them here
+        tempItems.push_back(Item(stoi(id), title, stoi(position), date));
+    };
+
+    return tempItems;
 }
 
 std::optional<Item> BoardRepository::getItem(int columnId, int itemId) {
-    throw NotImplementedException();
+    int result = 0;
+    char *errorMessage = nullptr;
+
+    string sqlSelectItems = "WHERE column_id = " + std::to_string(columnId) + " AND id = " + std::to_string(itemId) + ";"; // get all items of the column
+    string items = "[";
+
+    result = sqlite3_exec(database, sqlSelectItems.c_str(), queryCallback, &items, &errorMessage);
+    handleSQLError(result, errorMessage);
+
+    if (items.size() == 0) {
+        std::optional<Item> a;
+        return a;
+    }
+
+    if (items.size() > 1) // the string is > 1 when the column has items/the callback returned the json string
+        items.pop_back(); // if that happens, remove the last ','
+    items += "]";         // we now have a valid json string, with items if available...
+
+    Document document;
+    document.Parse(items.c_str()); // don't think I need error handling here, since the data from the db should be fine
+
+    std::optional<Item> tempItems;
+    auto id = document[0]["id"].GetString();
+    auto title = document[0]["title"].GetString();
+    auto date = document[0]["date"].GetString();
+    auto position = document[0]["position"].GetString();
+
+    return Item(stoi(id), title, stoi(position), date);
 }
 
 std::optional<Item> BoardRepository::postItem(int columnId, std::string title, int position) {
@@ -231,7 +266,7 @@ std::optional<Prog3::Core::Model::Item> BoardRepository::putItem(int columnId, i
 
     sqlDeleteItem = sqlDeleteItem + "positon = " + std::to_string(position) + " ";
 
-    sqlDeleteItem = sqlDeleteItem + "WHERE column_id = " + std::to_string(columnId) + " AND id = " + std::to_string(position) + ";";
+    sqlDeleteItem = sqlDeleteItem + "WHERE column_id = " + std::to_string(columnId) + " AND id = " + std::to_string(itemId) + ";";
 
     result = 0;
 
