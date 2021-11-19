@@ -97,11 +97,10 @@ std::optional<Column> BoardRepository::getColumn(int id) {
     Document document;
     document.Parse(columns.c_str()); // don't think I need error handling here, since the data from the db should be fine
 
-    auto id = document[0]["id"].GetString();
     auto title = document[0]["name"].GetString();
-    int position = (int)document[0]["position"].GetString();
+    auto position = document[0]["position"].GetString();
 
-    return Column(id, title, position);
+    return Column(id, title, stoi(position));
 }
 
 std::optional<Column> BoardRepository::postColumn(std::string name, int position) {
@@ -220,12 +219,11 @@ std::optional<Item> BoardRepository::getItem(int columnId, int itemId) {
     Document document;
     document.Parse(items.c_str()); // don't think I need error handling here, since the data from the db should be fine
 
-    auto id = document[0]["id"].GetString();
     auto title = document[0]["title"].GetString();
     auto date = document[0]["date"].GetString();
     auto position = document[0]["position"].GetString();
 
-    return Item(stoi(id), title, stoi(position), date);
+    return Item(itemId, title, stoi(position), date);
 }
 
 std::optional<Item> BoardRepository::postItem(int columnId, std::string title, int position) {
