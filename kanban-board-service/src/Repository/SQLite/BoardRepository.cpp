@@ -89,18 +89,23 @@ std::optional<Column> BoardRepository::getColumn(int id) {
     if (columns.empty()) {
         return {};
     };
-
-    if (columns.size() > 1) // the string is > 1 when the column has items/the callback returned the json string
-        columns.pop_back(); // if that happens, remove the last ','
-    columns += "]";         // we now have a valid json string, with items if available...
+    columns.pop_back();
 
     Document document;
     document.Parse(columns.c_str()); // don't think I need error handling here, since the data from the db should be fine
+    auto test1 = document.HasParseError();
+    auto test = document.HasMember("name");
+    auto title = document["name"].GetString();
+    auto position = document["position"].GetString();
+    Column a = Column(id, title, stoi(position));
+    std::vector<Item> b = getItems(id);
+    if (!b.empty()) {
+        for (auto &item : b) {
+            a.addItem(item);
+        }
+    }
 
-    auto title = document[0]["name"].GetString();
-    auto position = document[0]["position"].GetString();
-
-    return Column(id, title, stoi(position));
+    return a;
 }
 
 std::optional<Column> BoardRepository::postColumn(std::string name, int position) {
@@ -169,7 +174,9 @@ std::vector<Item> BoardRepository::getItems(int columnId) {
     int result = 0;
     char *errorMessage = nullptr;
 
-    string sqlSelectItems = "select * from item where column_id = " + to_string(columnId); // get all items of the column
+    string sqlSelectItems = "select * from item "
+                            "where id = " +
+                            std::to_string(columnId); // get all items of the column
     string items = "[";
 
     result = sqlite3_exec(database, sqlSelectItems.c_str(), queryCallback, &items, &errorMessage);
@@ -202,10 +209,10 @@ std::optional<Item> BoardRepository::getItem(int columnId, int itemId) {
     int result = 0;
     char *errorMessage = nullptr;
 
-    string sqlSelectItems = "WHERE column_id = " + std::to_string(columnId) + " AND id = " + std::to_string(itemId) + ";"; // get all items of the column
-    string items = "[";
+    string sqlSelectItem = "select * from item where id = " + std::to_string(itemId) + " and column_id = " + std::to_string(columnId); // get all items of the column
+    string items = "";
 
-    result = sqlite3_exec(database, sqlSelectItems.c_str(), queryCallback, &items, &errorMessage);
+    result = sqlite3_exec(database, sqlSelectItem.c_str(), queryCallback, &items, &errorMessage);
     handleSQLError(result, errorMessage);
 
     if (items.empty()) {
@@ -214,14 +221,13 @@ std::optional<Item> BoardRepository::getItem(int columnId, int itemId) {
 
     if (items.size() > 1) // the string is > 1 when the column has items/the callback returned the json string
         items.pop_back(); // if that happens, remove the last ','
-    items += "]";         // we now have a valid json string, with items if available...
 
     Document document;
     document.Parse(items.c_str()); // don't think I need error handling here, since the data from the db should be fine
 
-    auto title = document[0]["title"].GetString();
-    auto date = document[0]["date"].GetString();
-    auto position = document[0]["position"].GetString();
+    auto title = document["title"].GetString();
+    auto date = document["date"].GetString();
+    auto position = document["position"].GetString();
 
     return Item(itemId, title, stoi(position), date);
 }
@@ -255,10 +261,7 @@ std::optional<Prog3::Core::Model::Item> BoardRepository::putItem(int columnId, i
     char *errorMessage = nullptr;
     int result = 0;
 
-    string sqlSelectItem = "select * from item "
-                           "where id = " +
-                           std::to_string(itemId) +
-                           " and column_id = " + std::to_string(columnId);
+    string sqlSelectItem = "select * from item where id = " + std::to_string(itemId) + " and column_id = " + std::to_string(columnId);
     std::string callback;
 
     result = sqlite3_exec(database, sqlSelectItem.c_str(), queryCallback, &callback, &errorMessage);
