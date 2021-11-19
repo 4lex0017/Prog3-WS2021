@@ -160,7 +160,7 @@ std::optional<Prog3::Core::Model::Column> BoardRepository::putColumn(int id, std
 
 void BoardRepository::deleteColumn(int id) {
     string sqlDeleteItem =
-        "DELETE FROM column WHERE id = " +
+        "DELETE FROM column WHERE id =" +
         to_string(id);
 
     int result = 0;
@@ -175,7 +175,7 @@ std::vector<Item> BoardRepository::getItems(int columnId) {
     char *errorMessage = nullptr;
 
     string sqlSelectItems = "select * from item "
-                            "where id = " +
+                            "where id =" +
                             std::to_string(columnId); // get all items of the column
     string items = "[";
 
@@ -209,12 +209,11 @@ std::optional<Item> BoardRepository::getItem(int columnId, int itemId) {
     int result = 0;
     char *errorMessage = nullptr;
 
-    string sqlSelectItem = "select * from item where id = " + std::to_string(itemId) + " and column_id = " + std::to_string(columnId); // get all items of the column
     string items = "";
+    string sqlSelectItem = "select * from item where id = " + std::to_string(itemId) + " and column_id =" + std::to_string(columnId); // get all items of the column
 
     result = sqlite3_exec(database, sqlSelectItem.c_str(), queryCallback, &items, &errorMessage);
     handleSQLError(result, errorMessage);
-
     if (items.empty()) {
         return {};
     }
@@ -261,7 +260,7 @@ std::optional<Prog3::Core::Model::Item> BoardRepository::putItem(int columnId, i
     char *errorMessage = nullptr;
     int result = 0;
 
-    string sqlSelectItem = "select * from item where id = " + std::to_string(itemId) + " and column_id = " + std::to_string(columnId);
+    string sqlSelectItem = "select * from item where id = " + std::to_string(itemId) + " and column_id =" + std::to_string(columnId);
     std::string callback;
 
     result = sqlite3_exec(database, sqlSelectItem.c_str(), queryCallback, &callback, &errorMessage);
@@ -276,14 +275,13 @@ std::optional<Prog3::Core::Model::Item> BoardRepository::putItem(int columnId, i
 
     sqlDeleteItem = sqlDeleteItem + "title = '" + title + "', ";
 
-    sqlDeleteItem = sqlDeleteItem + "positon = " + std::to_string(position) + " ";
+    sqlDeleteItem = sqlDeleteItem + "position = " + std::to_string(position) + " ";
 
-    sqlDeleteItem = sqlDeleteItem + "WHERE column_id = " + std::to_string(columnId) + " AND id = " + std::to_string(itemId) + ";";
+    sqlDeleteItem = sqlDeleteItem + "WHERE column_id = " + std::to_string(columnId) + " AND id =" + std::to_string(itemId) + ";";
 
     result = 0;
 
     result = sqlite3_exec(database, sqlDeleteItem.c_str(), NULL, 0, &errorMessage);
-    printf(errorMessage);
     handleSQLError(result, errorMessage);
     return Item(itemId, title, position, datetime);
 }
